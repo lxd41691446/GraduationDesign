@@ -172,5 +172,5 @@ if __name__ == '__main__':
     # 我们先将原数据集复制到BorderLine_Smote路径下，生成的负样本集合也在该路径下
     # 批处理文件会将该路径下的所有数据集合并得到下面的data路径内的csv文件，在dataSet文件中该路径名为File_Merge_Smote
     # Data_Part.PyCSV().merge_csv(save_name='train.csv', file_dir="Train")
-    data = pd.read_csv('Borderline_Smote/smote.csv', sep='，')
+    data = pd.read_csv('dataProcess/smote.csv', sep='，')
     data.info()
