@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 # 数据读取
 def load_data(File_Name):
     newindex = 0
-    synthetic = np.zeros((sum(1 for line in open(dataSet.File_Name)), 30))
+    synthetic = np.zeros((sum(1 for line in open(File_Name)), 30))
     with open(File_Name, encoding="utf-8-sig") as f:
         for row in csv.DictReader(f, skipinitialspace=True):
             # print(row)
@@ -168,7 +168,7 @@ def get_label_data():
     # 删除上次的结果
     if os.path.exists(dataSet.File_Upset):
         os.remove(dataSet.File_Upset)
-    data = pd.read_csv(dataSet.File_Name, sep=',')
+    data = pd.read_csv(dataSet.File_Merge_Smote, sep=',')
     data = shuffle(data)
     data.to_csv(dataSet.File_Upset, index=False, header=True)
 
