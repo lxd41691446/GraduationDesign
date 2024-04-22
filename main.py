@@ -3,11 +3,12 @@ import dataProcess
 import pandas as pd
 
 import dataToGraph
-import gnn
+import gcn
 
 if __name__ == '__main__':
     csv_path = dataSet.File_Train
     save_dir = 'Part_Data'
+    user_graph_list = []
 
     dataProcess.get_label_data()  # 数据打乱
     dataProcess.Tc_Part().split_csv(dataSet.File_Upset)  # 数据切分
@@ -18,6 +19,7 @@ if __name__ == '__main__':
     for i in range(dataSet.num_user):
         dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
         trainGraph = dataToGraph.Graph.turn_Graph(dfTrain)
-        gnn.train(trainGraph)
-        gnn.modelEval(testGraph)
+        user_graph_list.append(trainGraph)
+    gcn.fed_train(user_graph_list)
+    gcn.modelEval(testGraph)
 

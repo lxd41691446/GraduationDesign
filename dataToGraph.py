@@ -2,10 +2,8 @@ import numpy as np
 import torch
 import pandas as pd
 from torch_geometric.data import Data
-import torch_geometric.transforms as T
 from sklearn.cluster import KMeans
 import networkx as nx
-import matplotlib.pyplot as plt
 
 
 class Graph:
