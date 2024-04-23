@@ -1,7 +1,9 @@
 import numpy as np
 import torch
 import pandas as pd
+from scipy.sparse import coo_matrix
 from torch_geometric.data import Data
+from torch.utils.data import DataLoader, TensorDataset
 from sklearn.cluster import KMeans
 import networkx as nx
 
@@ -58,6 +60,44 @@ class Graph:
         # plt.show()
         '''
         return data
+
+    def turn_graph_gat(df):
+        # 生成聚类用于进行邻接矩阵的生成
+        x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
+        y = torch.tensor(df.iloc[:, -1].values, dtype=torch.long)
+        k = int(len(df) / 1000)
+        print("prepare make KMeans")
+        kmeans = KMeans(n_clusters=k)
+        data = Data(x=x, y=y)
+        kmeans.fit(x)
+        cluster_labels = kmeans.labels_
+        edge_index = []
+        print("prepare make edge")
+        # 由于样本过大，采用生成稀疏矩阵的方法解决该问题
+        for i in range(k):
+            cluster_indices = np.where(cluster_labels == i)[0]
+            re_node = cluster_indices[0]
+            for j in range(1, len(cluster_indices)):
+                edge_index.append([re_node, cluster_indices[j]])
+        edge_index = torch.tensor(np.array(edge_index).T)
+
+        num_nodes = len(x)
+        num_edges = len(edge_index)
+
+        # 构建 COO 格式的稀疏矩阵
+        adj_matrix_sparse = coo_matrix((np.ones(num_edges), (edge_index[:, 0], edge_index[:, 1])),
+                                       shape=(num_nodes, num_nodes))
+
+        # 将稀疏矩阵转换为 CSR 格式
+        adj_matrix_sparse = adj_matrix_sparse.tocsr()
+
+        # 可以通过打印稀疏矩阵来查看其内容
+        print(f"adj_matrix_sparse :{adj_matrix_sparse}")
+
+        features = x
+        labels = y
+        dataset = TensorDataset(features, labels)
+        return dataset, adj_matrix_sparse
 
 if __name__ == '__main__':
     df = pd.DataFrame({
