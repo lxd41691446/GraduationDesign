@@ -47,13 +47,15 @@ if __name__ == '__main__':
         user_gat_adjMatrix_list.append(trainAdjMatrix)
         gat.train(train_loader, test_loader, trainAdjMatrix, testAdjMatrix)
     '''
-    # SAGE训练部分
+    # SAGE训练部分(单机）
     testSageGraph = dataToGraph.Graph.turn_Graph(df)  # 测试集图生成
     for i in range(dataSet.num_user):
         dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
         trainSageGraph = dataToGraph.Graph.turn_Graph(dfTrain)
         user_sage_graph_list.append(trainSageGraph)
-        graphSAGE.train(trainSageGraph, testSageGraph)
+        # graphSAGE.train(trainSageGraph, testSageGraph)
+    # SAGE联邦学习
+        graphSAGE.fed_train(user_sage_graph_list, testSageGraph)
 
 
 
