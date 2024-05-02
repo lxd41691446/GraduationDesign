@@ -171,4 +171,4 @@ def fed_train(data_list, test_data):
                 test_correct += (predicted == batch_y).sum().item()
 
         test_accuracy = 100 * test_correct / test_total
-        print(f"Test Accuracy: {test_accuracy}%")
+        print(f"In the {epoch} round, Test Accuracy: {test_accuracy}%")

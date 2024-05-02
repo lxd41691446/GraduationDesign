@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import dataToGraph
 import gat
 import gcn
+import gpn
 import graphSAGE
 
 if __name__ == '__main__':
@@ -15,6 +16,7 @@ if __name__ == '__main__':
     user_gat_graph_list = []
     user_sage_graph_list = []
     user_gat_adjMatrix_list = []
+    user_gpn_graph_list = []
 
     batch_size = 128  # 小批量大小
 
@@ -47,6 +49,7 @@ if __name__ == '__main__':
         user_gat_adjMatrix_list.append(trainAdjMatrix)
         gat.train(train_loader, test_loader, trainAdjMatrix, testAdjMatrix)
     '''
+    '''
     # SAGE训练部分(单机）
     testSageGraph = dataToGraph.Graph.turn_Graph(df)  # 测试集图生成
     for i in range(dataSet.num_user):
@@ -55,7 +58,16 @@ if __name__ == '__main__':
         user_sage_graph_list.append(trainSageGraph)
         # graphSAGE.train(trainSageGraph, testSageGraph)
     # SAGE联邦学习
-        graphSAGE.fed_train(user_sage_graph_list, testSageGraph)
+    graphSAGE.fed_train(user_sage_graph_list, testSageGraph)
+    '''
+
+    # gpn训练部分（单机）
+    testGpn = dataToGraph.Graph.turn_Graph(df)
+    for i in range(dataSet.num_user):
+        dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
+        trainGpn = dataToGraph.Graph.turn_Graph(dfTrain)
+        user_gpn_graph_list.append(trainGpn)
+    gpn.train_test(user_gpn_graph_list, testGpn)
 
 
 

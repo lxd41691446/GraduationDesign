@@ -9,15 +9,41 @@ import networkx as nx
 
 
 class Graph:
+    def kmeans(X, n_clusters, max_iter=100):
+        # 随机选择初始聚类中心
+        random_indices = torch.randperm(X.shape[0])[:n_clusters]
+        centroids = X[random_indices]
+
+        for _ in range(max_iter):
+            # 计算每个样本到聚类中心的距离
+            distances = torch.norm(X[:, None] - centroids, dim=-1)
+
+            # 分配样本到最近的聚类中心
+            labels = torch.argmin(distances, dim=-1)
+
+            # 更新聚类中心为每个簇的平均值
+            new_centroids = torch.stack([torch.mean(X[labels == k], dim=0) for k in range(n_clusters)])
+
+            # 判断是否收敛
+            if torch.all(torch.eq(centroids, new_centroids)):
+                break
+
+            centroids = new_centroids
+
+        return labels
+
     def turn_Graph(df):
         x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
         y = torch.tensor(df.iloc[:, -1].values, dtype=torch.long)
         k = int(len(df) / 1000)
         print("prepare make KMeans")
+        '''
         kmeans = KMeans(n_clusters=k)
         data = Data(x=x, y=y)
         kmeans.fit(x)
         cluster_labels = kmeans.labels_
+        '''
+        cluster_labels = Graph.kmeans(x, k)
         edge_index = []
         print("prepare make edge")
         for i in range(k):
@@ -26,10 +52,9 @@ class Graph:
             for j in range(1, len(cluster_indices)):
                 edge_index.append([re_node, cluster_indices[j]])
         edge_index = torch.tensor(np.array(edge_index).T)
-        data = Data(x=x,y=y,edge_index=edge_index)
+        data = Data(x=x, y=y, edge_index=edge_index)
         print(data)
         print("done!")
-
 
         # 创建一个无向图对象
         graph = nx.Graph()
@@ -98,6 +123,7 @@ class Graph:
         labels = y
         dataset = TensorDataset(features, labels)
         return dataset, adj_matrix_sparse
+
 
 if __name__ == '__main__':
     df = pd.DataFrame({
