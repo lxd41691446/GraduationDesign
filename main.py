@@ -67,7 +67,9 @@ if __name__ == '__main__':
         dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
         trainGpn = dataToGraph.Graph.turn_Graph(dfTrain)
         user_gpn_graph_list.append(trainGpn)
-    gpn.train_test(user_gpn_graph_list, testGpn)
+    # gpn.train_test(user_gpn_graph_list, testGpn)
+    # gpn联邦学习
+    gpn.fed_train(user_gpn_graph_list, testGpn)
 
 
 

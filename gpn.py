@@ -89,3 +89,93 @@ def train_test(train_data_list, test_data):
             print('Epoch {}/{}'.format(epoch + 1, num_epochs))
             train(model, train_loader, optimizer, criterion)
             test(model, test_loader)
+
+
+def fed_train(train_data_list, test_data):
+    # 定义模型和超参数
+    # 定义模型和超参数
+    input_dim = 29  # 输入特征维度
+    hidden_dim = 64  # 隐藏层维度
+    num_classes = 2  # 类别数
+    global_model = GPoolNet(input_dim, hidden_dim, num_classes)
+
+    # 定义参与方类
+    class Participant:
+        def __init__(self, data):
+            self.data = data
+            self.model = GPoolNet(data.num_features, hidden_dim, num_classes)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
+
+        def train(self):
+            self.model.train()
+            self.optimizer.zero_grad()
+            output = self.model(self.data.x, self.data.edge_index)
+            criterion = nn.CrossEntropyLoss()
+            loss = criterion(output, self.data.y)
+            loss.backward()
+            self.optimizer.step()
+
+        def get_model_params(self):
+            return self.model.state_dict()
+
+        def set_model_params(self, params):
+            self.model.load_state_dict(params)
+
+    participants = []
+    for data in train_data_list:
+        participant = Participant(data)
+        participants.append(participant)
+
+    # 联邦训练循环
+    num_epochs = 50
+
+    for epoch in range(num_epochs):
+        for participant in participants:
+            participant.train()
+
+        # 参与方之间模型参数的聚合
+        aggregated_params = {}
+        for key in participants[0].get_model_params().keys():
+            aggregated_params[key] = sum(participant.get_model_params()[key] for participant in participants) / len(
+                participants)
+
+        # 将聚合后的模型参数设置给各个参与方
+        for participant in participants:
+            participant.set_model_params(aggregated_params)
+
+        # 创建测试集的 DataLoader
+        test_dataset = [test_data]  # 假设 test_data 是测试集的 Data 对象
+        test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+        # 在测试集上评估准确率
+        test_correct = 0
+        test_total = 0
+        # 更新全局模型参数
+        # 获取新模型的初始参数
+        global_model_params = global_model.state_dict()
+        print(global_model_params)
+
+        # 将聚合后的参数更新到新模型的初始参数中
+        for key in global_model_params.keys():
+            global_model_params[key] = aggregated_params[key]
+
+        # 将更新后的参数应用于新模型
+        global_model.load_state_dict(global_model_params)
+
+        with torch.no_grad():  # 在测试阶段不需要计算梯度
+            for batch_data in test_dataloader:
+                # 提取测试集数据
+                batch_x = batch_data.x
+                batch_edge_index = batch_data.edge_index
+                batch_y = batch_data.y
+
+                # 前向传播
+                output = global_model(batch_x, batch_edge_index)
+
+                # 计算预测准确率
+                _, predicted = torch.max(output.data, 1)
+                test_total += batch_y.size(0)
+                test_correct += (predicted == batch_y).sum().item()
+
+        test_accuracy = 100 * test_correct / test_total
+        print(f"In the {epoch} round, Test Accuracy: {test_accuracy}%")
