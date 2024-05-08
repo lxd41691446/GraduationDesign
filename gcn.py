@@ -16,7 +16,7 @@ class GNNModel(nn.Module):
     def forward(self, x, edge_index):
         if edge_index.shape[0] != 2:
             edge_index = edge_index.t().contiguous()
-        print(edge_index)
+        # print(edge_index)
         x = self.conv1(x, edge_index)
         x = torch.relu(x)
         x = self.conv2(x, edge_index)
@@ -37,7 +37,7 @@ fedAvg.FedGCN.random_initialize_global_params(global_model)
 num_round = 10
 
 def fed_train(train_list):
-    num_epochs = 100
+    num_epochs = 40
     learning_rate = 0.01
     # 定义优化器
     optimizer = optim.Adam(gnn_model.parameters(), lr=learning_rate)
@@ -49,9 +49,9 @@ def fed_train(train_list):
     gnn_model.train()
 
     for round in range(num_round):  # 联邦参数更新轮
-        # 将全局模型参数传递给用户模型
-        gnn_model.load_state_dict(global_model.state_dict())
         for index, item in enumerate(train_list):  # 遍历各个用户图
+            # 将全局模型参数传递给用户模型
+            gnn_model.load_state_dict(global_model.state_dict())
             for epoch in range(num_epochs):  # 每个用户模型进行训练
                 optimizer.zero_grad()
                 output = gnn_model(item.x, item.edge_index)
@@ -59,8 +59,8 @@ def fed_train(train_list):
                 loss.backward()
                 optimizer.step()
 
-                if epoch % 50 == 0:
-                    print(f"Epoch: {epoch + 1}, Loss: {loss.item()}")
+                if epoch % 20 == 0:
+                    print(f"Epoch: {epoch + 1},round:{round+1} Loss: {loss.item()}")
 
             updated_dict = gnn_model.state_dict()
             # 写入更新的本地模型参数列表
@@ -81,7 +81,7 @@ def fed_train(train_list):
             global_model_param = global_model.state_dict()[param_name]
             global_model_param.copy_(param_tensor)
     # 输出最后的全局模型量
-    print(global_model.state_dict())
+    # print(global_model.state_dict())
 
 
 def train(train_data):

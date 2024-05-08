@@ -4,7 +4,6 @@ import torch.optim as optim
 from torch_geometric.nn import SAGEConv
 from torch_geometric.data import DataLoader
 
-
 # 定义 GraphSAGE 模型
 import dataSet
 
@@ -20,8 +19,6 @@ class GraphSAGE(nn.Module):
         x = nn.functional.relu(x)
         x = self.conv2(x, edge_index)
         return x
-
-
 
 
 def train(data, test_data):
@@ -58,7 +55,7 @@ def train(data, test_data):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        if(epoch % 20 == 0):
+        if (epoch % 20 == 0):
             print(f"Epoch {epoch + 1}: Loss={loss.item()}")
 
     # 创建测试集的 DataLoader
@@ -87,12 +84,14 @@ def train(data, test_data):
     test_accuracy = 100 * test_correct / test_total
     print(f"Test Accuracy: {test_accuracy}%")
 
+
 def fed_train(data_list, test_data):
     # 定义模型和超参数
     input_dim = 29  # 输入特征维度
     hidden_dim = 64  # 隐藏层维度
     num_classes = 2  # 类别数
     global_model = GraphSAGE(input_dim, hidden_dim, num_classes)
+
     # 定义参与方类
     class Participant:
         def __init__(self, data):

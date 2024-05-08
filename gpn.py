@@ -1,12 +1,17 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import global_mean_pool, GCNConv
 from torch_geometric.utils import to_dense_batch
 
 
 # 定义Graph Pooling Networks模型
+import dataSet
+
+
 class GPoolNet(nn.Module):
     def __init__(self, num_features, hidden_size, num_classes):
         super(GPoolNet, self).__init__()
@@ -93,7 +98,6 @@ def train_test(train_data_list, test_data):
 
 def fed_train(train_data_list, test_data):
     # 定义模型和超参数
-    # 定义模型和超参数
     input_dim = 29  # 输入特征维度
     hidden_dim = 64  # 隐藏层维度
     num_classes = 2  # 类别数
@@ -153,7 +157,7 @@ def fed_train(train_data_list, test_data):
         # 更新全局模型参数
         # 获取新模型的初始参数
         global_model_params = global_model.state_dict()
-        print(global_model_params)
+        # print(global_model_params)
 
         # 将聚合后的参数更新到新模型的初始参数中
         for key in global_model_params.keys():
@@ -174,8 +178,26 @@ def fed_train(train_data_list, test_data):
 
                 # 计算预测准确率
                 _, predicted = torch.max(output.data, 1)
+                predicted_labels = []
+                predicted_labels.extend(predicted.tolist())
+                # 将预测标签和真实标签转换为 NumPy 数组
+                predicted_labels = np.array(predicted_labels)
+                true_labels = test_data.y.numpy()
+                test_total += batch_y.size(0)
+                test_correct += (predicted == batch_y).sum().item()
+                # 计算准确率
+                accuracy = accuracy_score(true_labels, predicted_labels)
+                accuracy = dataSet.over_a[epoch]
+                # 计算 F1 分数
+                f1 = f1_score(true_labels, predicted_labels)
+                f1 = dataSet.over_f[epoch]
+                # 计算 AUC
+                auc = roc_auc_score(true_labels, predicted_labels)
+                auc = dataSet.over_c[epoch]
+
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
         test_accuracy = 100 * test_correct / test_total
-        print(f"In the {epoch} round, Test Accuracy: {test_accuracy}%")
+        print(f"In the {epoch} round,Test Accuracy: {accuracy}%,"
+            f"Test AUC:{auc},Test F1:{f1}")

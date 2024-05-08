@@ -1,3 +1,4 @@
+import GANF
 import dataSet
 import dataProcess
 import pandas as pd
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     user_sage_graph_list = []
     user_gat_adjMatrix_list = []
     user_gpn_graph_list = []
+    user_ganf_graph_list = []
 
     batch_size = 128  # 小批量大小
 
@@ -60,7 +62,6 @@ if __name__ == '__main__':
     # SAGE联邦学习
     graphSAGE.fed_train(user_sage_graph_list, testSageGraph)
     '''
-
     # gpn训练部分（单机）
     testGpn = dataToGraph.Graph.turn_Graph(df)
     for i in range(dataSet.num_user):
@@ -70,6 +71,15 @@ if __name__ == '__main__':
     # gpn.train_test(user_gpn_graph_list, testGpn)
     # gpn联邦学习
     gpn.fed_train(user_gpn_graph_list, testGpn)
-
-
-
+    '''
+    # 核心算法GANF训练
+    
+    testGANF = dataToGraph.Graph.turn_Graph(df)
+    for i in range(dataSet.num_user):
+        dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
+        trainGANF = dataToGraph.Graph.turn_Graph(dfTrain)
+        user_ganf_graph_list.append(trainGANF)
+    # GANF.train_test(user_ganf_graph_list, testGANF)
+    # GANF联邦学习
+    '''
+    GANF.fed_train(user_gpn_graph_list, testGpn)
