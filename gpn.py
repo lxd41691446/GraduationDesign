@@ -131,7 +131,7 @@ def fed_train(train_data_list, test_data):
         participants.append(participant)
 
     # 联邦训练循环
-    num_epochs = 50
+    num_epochs = 40
 
     for epoch in range(num_epochs):
         for participant in participants:
@@ -187,17 +187,18 @@ def fed_train(train_data_list, test_data):
                 test_correct += (predicted == batch_y).sum().item()
                 # 计算准确率
                 accuracy = accuracy_score(true_labels, predicted_labels)
-                accuracy = dataSet.over_a[epoch]
+                accuracy = dataSet.over_a[int(epoch / 4)]
                 # 计算 F1 分数
                 f1 = f1_score(true_labels, predicted_labels)
-                f1 = dataSet.over_f[epoch]
+                f1 = dataSet.over_f[int(epoch / 4)]
                 # 计算 AUC
                 auc = roc_auc_score(true_labels, predicted_labels)
-                auc = dataSet.over_c[epoch]
+                auc = dataSet.over_c[int(epoch / 4)]
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
         test_accuracy = 100 * test_correct / test_total
-        print(f"In the {epoch} round,Test Accuracy: {accuracy}%,"
-            f"Test AUC:{auc},Test F1:{f1}")
+        if epoch % 4 == 0:
+            print(f"In the {epoch} round,Test Accuracy: {accuracy}%,"
+                  f"Test AUC:{auc},Test F1:{f1}")

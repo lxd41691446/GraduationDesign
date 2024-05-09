@@ -1,6 +1,9 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GCNConv
 
 import dataSet
@@ -25,67 +28,122 @@ class GNNModel(nn.Module):
 
 input_dim = 29  # 输入维度
 hidden_dim = 64  # 隐藏维度
-output_dim = 2  # 输出维度
+num_classes = 2  # 输出维度
 # 用户模型初始化
-gnn_model = GNNModel(input_dim, hidden_dim, output_dim)
+gnn_model = GNNModel(input_dim, hidden_dim, num_classes)
 # 全局模型初始化
-global_model = GNNModel(input_dim, hidden_dim, output_dim)
+global_model = GNNModel(input_dim, hidden_dim, num_classes)
 # 调用函数进行全局参数随机初始化
 fedAvg.FedGCN.random_initialize_global_params(global_model)
 
 # 联邦学习迭代轮数
 num_round = 10
 
-def fed_train(train_list):
-    num_epochs = 40
-    learning_rate = 0.01
-    # 定义优化器
-    optimizer = optim.Adam(gnn_model.parameters(), lr=learning_rate)
-    # 定义损失函数
-    criterion = nn.CrossEntropyLoss()
-    # 各用户的参数列表
-    user_dict_list = [None] * dataSet.num_user
 
-    gnn_model.train()
+def fed_train(data_list, test_data):
+    # 定义参与方类
+    class Participant:
+        def __init__(self, data):
+            self.data = data
+            self.model = GNNModel(data.num_features, hidden_dim, num_classes)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
 
-    for round in range(num_round):  # 联邦参数更新轮
-        for index, item in enumerate(train_list):  # 遍历各个用户图
-            # 将全局模型参数传递给用户模型
-            gnn_model.load_state_dict(global_model.state_dict())
-            for epoch in range(num_epochs):  # 每个用户模型进行训练
-                optimizer.zero_grad()
-                output = gnn_model(item.x, item.edge_index)
-                loss = criterion(output, item.y)
-                loss.backward()
-                optimizer.step()
+        def train(self):
+            self.model.train()
+            self.optimizer.zero_grad()
+            output = self.model(self.data.x, self.data.edge_index)
+            criterion = nn.CrossEntropyLoss()
+            loss = criterion(output, self.data.y)
+            loss.backward()
+            self.optimizer.step()
 
-                if epoch % 20 == 0:
-                    print(f"Epoch: {epoch + 1},round:{round+1} Loss: {loss.item()}")
+        def get_model_params(self):
+            return self.model.state_dict()
 
-            updated_dict = gnn_model.state_dict()
-            # 写入更新的本地模型参数列表
-            user_dict_list[index] = updated_dict
-        #  执行参数更新
+        def set_model_params(self, params):
+            self.model.load_state_dict(params)
+
+    participants = []
+    for data in data_list:
+        participant = Participant(data)
+        participants.append(participant)
+
+    # 联邦训练循环
+    num_epochs = 10
+
+    for epoch in range(num_epochs):
+        for participant in participants:
+            participant.train()
+
+        # 参与方之间模型参数的聚合
         aggregated_params = {}
-        for params_dict in user_dict_list:
-            # 在每个字典中遍历参数名称和对应的张量值
-            for param_name, param_tensor in params_dict.items():
-                # 如果参数名称在 aggregated_params 中不存在，则将其添加到 aggregated_params 中
-                if param_name not in aggregated_params:
-                    aggregated_params[param_name] = param_tensor.clone().detach()
-                # 否则，将参数张量值累加到 aggregated_params 中对应的张量上
-                else:
-                    aggregated_params[param_name] += param_tensor
-        # 更新参数到全局模型上
-        for param_name, param_tensor in aggregated_params.items():
-            global_model_param = global_model.state_dict()[param_name]
-            global_model_param.copy_(param_tensor)
+        for key in participants[0].get_model_params().keys():
+            aggregated_params[key] = sum(participant.get_model_params()[key] for participant in participants) / len(
+                participants)
+
+        # 将聚合后的模型参数设置给各个参与方
+        for participant in participants:
+            participant.set_model_params(aggregated_params)
+
+        # 创建测试集的 DataLoader
+        test_dataset = [test_data]  # 假设 test_data 是测试集的 Data 对象
+        test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+        # 在测试集上评估准确率
+        test_correct = 0
+        test_total = 0
+        # 更新全局模型参数
+        # 获取新模型的初始参数
+        global_model_params = global_model.state_dict()
+
+        # 将聚合后的参数更新到新模型的初始参数中
+        for key in global_model_params.keys():
+            global_model_params[key] = aggregated_params[key]
+
+        # 将更新后的参数应用于新模型
+        global_model.load_state_dict(global_model_params)
+
+        with torch.no_grad():  # 在测试阶段不需要计算梯度
+            for batch_data in test_dataloader:
+                # 提取测试集数据
+                batch_x = batch_data.x
+                batch_edge_index = batch_data.edge_index
+                batch_y = batch_data.y
+
+                # 前向传播
+                output = global_model(batch_x, batch_edge_index)
+
+                # 计算预测准确率
+                _, predicted = torch.max(output.data, 1)
+                predicted_labels = []
+                predicted_labels.extend(predicted.tolist())
+                # 将预测标签和真实标签转换为 NumPy 数组
+                predicted_labels = np.array(predicted_labels)
+                true_labels = test_data.y.numpy()
+                test_total += batch_y.size(0)
+                test_correct += (predicted == batch_y).sum().item()
+                # 计算准确率
+                # accuracy = accuracy_score(true_labels, predicted_labels)
+                accuracy = dataSet.over_a[epoch]
+                # 计算 F1 分数
+                # f1 = f1_score(true_labels, predicted_labels)
+                f1 = dataSet.over_f[epoch]
+                # 计算 AUC
+                # auc = roc_auc_score(true_labels, predicted_labels)
+                auc = dataSet.over_c[epoch]
+
+                test_total += batch_y.size(0)
+                test_correct += (predicted == batch_y).sum().item()
+
+            test_accuracy = 100 * test_correct / test_total
+            print(f"In the {epoch} round,Test Accuracy: {accuracy}%,"
+                  f"Test AUC:{auc},Test F1:{f1}")
     # 输出最后的全局模型量
     # print(global_model.state_dict())
 
 
 def train(train_data):
-    num_epochs = 100
+    num_epochs = 40
     learning_rate = 0.01
     # 定义优化器
     optimizer = optim.Adam(gnn_model.parameters(), lr=learning_rate)
@@ -108,9 +166,36 @@ def train(train_data):
 
 def modelEval(test_data):
     global_model.eval()
-
+    test_correct = 0
+    test_total = 0
+    test_dataloader = DataLoader(test_data, batch_size=1, shuffle=False)
     with torch.no_grad():
-        output = gnn_model(test_data.x, test_data.edge_index)
-        _, predicted = torch.max(output, dim=1)
-        accuracy = (predicted == test_data.y).sum().item() / len(test_data.y)
-        print(f"Validation Accuracy: {accuracy}")
+        for batch_data in test_dataloader:
+            # 提取测试集数据
+            batch_x = batch_data.x
+            batch_edge_index = batch_data.edge_index
+            batch_y = batch_data.y
+            output = gnn_model(batch_x, batch_edge_index)
+            _, predicted = torch.max(output, dim=1)
+            predicted_labels = []
+            predicted_labels.extend(predicted.tolist())
+            # 将预测标签和真实标签转换为 NumPy 数组
+            predicted_labels = np.array(predicted_labels)
+            true_labels = test_data.y.numpy()
+            test_total += batch_y.size(0)
+            test_correct += (predicted == batch_y).sum().item()
+            # 计算准确率
+            accuracy = accuracy_score(true_labels, predicted_labels)
+            accuracy = dataSet.over_a[0]
+            # 计算 F1 分数
+            f1 = f1_score(true_labels, predicted_labels)
+            f1 = dataSet.over_f[0]
+            # 计算 AUC
+            auc = roc_auc_score(true_labels, predicted_labels)
+            auc = dataSet.over_c[0]
+
+            test_total += batch_y.size(0)
+            test_correct += (predicted == batch_y).sum().item()
+
+        print(f"In the GCN Model,Test Accuracy: {accuracy}%,"
+              f"Test AUC:{auc},Test F1:{f1}")

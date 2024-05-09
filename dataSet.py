@@ -3,6 +3,7 @@
 num_item = 29
 # 客户端数量（需要数据分割的份数）
 num_user = 10
+num_user_s = 25
 # 进行数据提取的文件路径
 File_Name = 'Data/data_map10/creditcard1_train.csv'
 # 少数类样本名称
@@ -20,6 +21,7 @@ File_Train = 'dataProcess/Data_Train.csv'
 File_Check = 'dataProcess/Data_Test.csv'
 # 训练集比例
 Train_Set = 0.8
+Train_Set_s = 0.95
 User_w = ['0.01']
 # 初始权重值
 base_score = 0.5

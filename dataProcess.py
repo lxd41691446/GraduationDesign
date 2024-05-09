@@ -49,7 +49,7 @@ class PyCSV:
             print(f"{file} 已经被合并到 {self.save_path} ！")
         print("所有文件已经合并完成 ！")
 
-    def split_csv(self, csv_path, save_dir, csv_encoding='utf-8'):
+    def split_csv(self, csv_path, save_dir, num_user, csv_encoding='utf-8'):
         """
         切分文件并获取csv文件信息。
         :param csv_path: csv文件路径
@@ -82,7 +82,7 @@ class PyCSV:
         # 获取数据行数
         self.total = sum(1 for line in open(dataSet.File_Train))
         # 确定每个文件所有的行数
-        self.partline = (int)(self.total / dataSet.num_user + 1)
+        self.partline = (int)(self.total / num_user + 1)
         # print(self.total / Data.num_user)
         # 切分后文件的后缀
         i = 0
@@ -178,7 +178,7 @@ class Tc_Part:
     def __init__(self):
         self.total = None
 
-    def split_csv(self, path):
+    def split_csv(self, path, train_set, file_name):
         # 如果train.csv和check.csv存在就删除
         if os.path.exists(dataSet.File_Train):
             os.remove(dataSet.File_Train)
@@ -189,9 +189,9 @@ class Tc_Part:
             csvreader = csv.reader(file)
             i = 0
             # 获取原文件行数
-            self.total = sum(1 for line in open(dataSet.File_Name))
+            self.total = sum(1 for line in open(file_name))
             # 获取训练集行数
-            self.partline = (int)(self.total * dataSet.Train_Set)
+            self.partline = (int)(self.total * train_set)
             self.encoding = 'utf-8'
             self.line_numbers = 0
             # print(self.total)

@@ -32,8 +32,11 @@ class Graph:
 
         return labels
 
-    def turn_Graph(df):
-        x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
+    def turn_Graph(df, if_s=False):
+        if if_s:
+            x = torch.tensor(df.iloc[:, 1:-1].values, dtype=torch.float)
+        else:
+            x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
         y = torch.tensor(df.iloc[:, -1].values, dtype=torch.long)
         k = int(len(df) / 1000)
         print("prepare make KMeans")

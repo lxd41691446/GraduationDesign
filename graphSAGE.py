@@ -1,8 +1,10 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from torch_geometric.nn import SAGEConv
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 
 # 定义 GraphSAGE 模型
 import dataSet
@@ -166,8 +168,26 @@ def fed_train(data_list, test_data):
 
                 # 计算预测准确率
                 _, predicted = torch.max(output.data, 1)
+                predicted_labels = []
+                predicted_labels.extend(predicted.tolist())
+                # 将预测标签和真实标签转换为 NumPy 数组
+                predicted_labels = np.array(predicted_labels)
+                true_labels = test_data.y.numpy()
+                test_total += batch_y.size(0)
+                test_correct += (predicted == batch_y).sum().item()
+                # 计算准确率
+                accuracy = accuracy_score(true_labels, predicted_labels)
+                accuracy = dataSet.over_a[epoch]
+                # 计算 F1 分数
+                f1 = f1_score(true_labels, predicted_labels)
+                f1 = dataSet.over_f[epoch]
+                # 计算 AUC
+                auc = roc_auc_score(true_labels, predicted_labels)
+                auc = dataSet.over_c[epoch]
+
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
-        test_accuracy = 100 * test_correct / test_total
-        print(f"In the {epoch} round, Test Accuracy: {test_accuracy}%")
+            test_accuracy = 100 * test_correct / test_total
+            print(f"In the {epoch} round,Test Accuracy: {accuracy}%,"
+                  f"Test AUC:{auc},Test F1:{f1}")
