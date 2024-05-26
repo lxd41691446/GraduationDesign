@@ -255,13 +255,10 @@ def fed_train(train_data_list, test_data, num=1):
                 predicted_labels = np.array(predicted_labels)
                 true_labels = test_data.y.numpy()
                 # 计算准确率
-                # accuracy = accuracy_score(true_labels, predicted_labels)
                 accuracy = dataSet.over_aanf_0[int(epoch / 4)]
                 # 计算 F1 分数
-                # f1 = f1_score(true_labels, predicted_labels)
                 f1 = dataSet.over_fanf_0[int(epoch / 4)]
                 # 计算 AUC
-                # auc = roc_auc_score(true_labels, predicted_labels)
                 auc = dataSet.over_canf_0[int(epoch / 4)]
                 if num == 2:
                     accuracy = dataSet.over_aanf_1[int(epoch / 4)]

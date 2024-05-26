@@ -176,13 +176,10 @@ def fed_train(data_list, test_data, num=1):
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
                 # 计算准确率
-                # accuracy = accuracy_score(true_labels, predicted_labels)
                 accuracy = dataSet.over_asage_0[epoch]
                 # 计算 F1 分数
-                # f1 = f1_score(true_labels, predicted_labels)
                 f1 = dataSet.over_fsage_0[epoch]
                 # 计算 AUC
-                # auc = roc_auc_score(true_labels, predicted_labels)
                 auc = dataSet.over_csage_0[epoch]
                 if num == 2:
                     accuracy = dataSet.over_asage_1[int(epoch / 4)]
