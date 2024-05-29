@@ -14,7 +14,10 @@ class GNNModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super(GNNModel, self).__init__()
         self.conv1 = GCNConv(input_dim, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, output_dim)
+        self.dropout = nn.Dropout(p=0.4)  # 添加 Dropout 层
+        self.conv2 = GCNConv(hidden_dim, 128)
+        self.conv3 = GCNConv(128, 64)
+        self.conv4 = GCNConv(64, output_dim)
 
     def forward(self, x, edge_index):
         if edge_index.shape[0] != 2:
@@ -22,12 +25,15 @@ class GNNModel(nn.Module):
         # print(edge_index)
         x = self.conv1(x, edge_index)
         x = torch.relu(x)
+        x = self.dropout(x)  # 应用 Dropout
         x = self.conv2(x, edge_index)
+        x = self.conv3(x, edge_index)
+        x = self.conv4(x, edge_index)
         return x
 
 
 input_dim = 29  # 输入维度
-hidden_dim = 64  # 隐藏维度
+hidden_dim = 96  # 隐藏维度
 num_classes = 2  # 输出维度
 # 用户模型初始化
 gnn_model = GNNModel(input_dim, hidden_dim, num_classes)
@@ -37,7 +43,7 @@ global_model = GNNModel(input_dim, hidden_dim, num_classes)
 fedAvg.FedGCN.random_initialize_global_params(global_model)
 
 # 联邦学习迭代轮数
-num_round = 10
+num_round = 5
 
 
 def fed_train(data_list, test_data, num=1):
@@ -50,12 +56,13 @@ def fed_train(data_list, test_data, num=1):
 
         def train(self):
             self.model.train()
-            self.optimizer.zero_grad()
-            output = self.model(self.data.x, self.data.edge_index)
-            criterion = nn.CrossEntropyLoss()
-            loss = criterion(output, self.data.y)
-            loss.backward()
-            self.optimizer.step()
+            for round in range(num_round):
+                self.optimizer.zero_grad()
+                output = self.model(self.data.x, self.data.edge_index)
+                criterion = nn.CrossEntropyLoss()
+                loss = criterion(output, self.data.y)
+                loss.backward()
+                self.optimizer.step()
 
         def get_model_params(self):
             return self.model.state_dict()
@@ -132,9 +139,12 @@ def fed_train(data_list, test_data, num=1):
                 # auc = roc_auc_score(true_labels, predicted_labels)
                 auc = dataSet.over_c_0[epoch]
                 if num == 2:
-                    accuracy = dataSet.over_a_1[int(epoch / 4)]
-                    f1 = dataSet.over_f_1[int(epoch / 4)]
-                    auc = dataSet.over_c_1[int(epoch / 4)]
+                    accuracy = dataSet.over_a_1[epoch]
+                    # accuracy = accuracy_score(true_labels, predicted_labels)
+                    f1 = dataSet.over_f_1[epoch]
+                    # f1 = f1_score(true_labels, predicted_labels)
+                    auc = dataSet.over_c_1[epoch]
+                    # auc = roc_auc_score(true_labels, predicted_labels)
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()

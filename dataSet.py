@@ -14,7 +14,7 @@ File_Smote = 'dataProcess/Data_Smote.csv'
 File_Merge_Smote = 'dataProcess/smote.csv'
 # 打乱顺序后的文件路径
 File_Upset = 'dataProcess/Data_Upset.csv'
-File_Upset_o = 'Data/creditcard_2023.csv'
+File_Upset_o = 'dataProcess/resampled_data_2.csv'
 # 分割后训练集路径
 File_Train = 'dataProcess/Data_Train.csv'
 # 分割后测试集路径
@@ -76,6 +76,6 @@ over_c_1 = [0.71, 0.72, 0.72, 0.73, 0.74,
 over_csage_1 = [0.70, 0.71, 0.72, 0.73, 0.73,
                 0.75, 0.77, 0.78, 0.79, 0.79]
 over_cpn_1 = [0.70, 0.70, 0.70, 0.72, 0.74,
-              0.70, 0.70, 0.70, 0.72, 0.74]
+              0.74, 0.75, 0.75, 0.75, 0.75]
 over_canf_1 = [0.72, 0.74, 0.74, 0.75, 0.75,
                0.76, 0.76, 0.77, 0.78, 0.78]

@@ -7,6 +7,7 @@ import random
 from sklearn.neighbors import NearestNeighbors
 from numpy import genfromtxt
 import numpy as np
+from imblearn.over_sampling import SMOTE
 
 
 
@@ -158,6 +159,42 @@ def less_make():
 
 
 if __name__ == '__main__':
+    data = pd.read_csv("dataProcess/creditcard1_train.csv")
+    # 将特征和标签分离
+    X = data.iloc[:, :-1].values  # 特征
+    y = data.iloc[:, -1].values  # 标签
+
+    # 定义SMOTE过采样器
+    smote = SMOTE(random_state=42, k_neighbors=4)
+
+    # 应用SMOTE过采样
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+
+    # 将重采样后的数据合并为DataFrame
+    resampled_data = pd.DataFrame(np.hstack((X_resampled, y_resampled.reshape(-1, 1))), columns=data.columns)
+
+    # 保存为新的CSV文件
+    resampled_data.to_csv('dataProcess/resampled_data.csv', index=False)
+    print("set 1 have smote!")
+
+    data = pd.read_csv("Data/creditcard_2023.csv")
+    # 将特征和标签分离
+    X = data.iloc[:, :-1].values  # 特征
+    y = data.iloc[:, -1].values  # 标签
+
+    # 定义SMOTE过采样器
+    smote = SMOTE(random_state=42, k_neighbors=4)
+
+    # 应用SMOTE过采样
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+
+    # 将重采样后的数据合并为DataFrame
+    resampled_data = pd.DataFrame(np.hstack((X_resampled, y_resampled.reshape(-1, 1))), columns=data.columns)
+
+    # 保存为新的CSV文件
+    resampled_data.to_csv('dataProcess/resampled_data_2.csv', index=False)
+    print("set 2 have smote!")
+    '''
     less_make()
     samples = pd.read_csv("Data_Smote/Data_Less.csv")
     samples = np.array(samples)
@@ -174,3 +211,4 @@ if __name__ == '__main__':
     # Data_Part.PyCSV().merge_csv(save_name='train.csv', file_dir="Train")
     data = pd.read_csv('dataProcess/smote.csv', sep='，')
     data.info()
+    '''

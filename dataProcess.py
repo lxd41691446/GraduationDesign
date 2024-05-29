@@ -76,11 +76,11 @@ class PyCSV:
 
         # 获取文件大小
         self.file_size = round(os.path.getsize(self.csv_path) / 1024 / 1024, 2)
-
+        print(self.file_size)
         # 获取数据行数
         self.line_numbers = 0
         # 获取数据行数
-        self.total = sum(1 for line in open(dataSet.File_Train))
+        self.total = sum(1 for line in open(self.csv_path))
         # 确定每个文件所有的行数
         self.partline = (int)(self.total / num_user + 1)
         # print(self.total / Data.num_user)
@@ -164,11 +164,11 @@ class PyCSV:
 
 
 # 数据打乱
-def get_label_data():
+def get_label_data(fileName):
     # 删除上次的结果
     if os.path.exists(dataSet.File_Upset):
         os.remove(dataSet.File_Upset)
-    data = pd.read_csv(dataSet.File_Merge_Smote, sep=',')
+    data = pd.read_csv(fileName, sep=',')
     data = shuffle(data)
     data.to_csv(dataSet.File_Upset, index=False, header=True)
 

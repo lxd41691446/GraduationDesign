@@ -11,15 +11,15 @@ import gpn
 import graphSAGE
 
 if __name__ == '__main__':
-    csv_path = dataSet.File_Train
+    csv_path = "dataProcess/resampled_data.csv"
     save_dir = 'Part_Data'
     user_graph_list = []
     user_gat_adjMatrix_list = []
 
     batch_size = 128  # 小批量大小
 
-    dataProcess.get_label_data()  # 数据打乱
-    dataProcess.Tc_Part().split_csv(dataSet.File_Upset, train_set=dataSet.Train_Set, file_name=dataSet.File_Name)  # 数据切分
+    dataProcess.get_label_data("dataProcess/resampled_data.csv")  # 数据打乱
+    dataProcess.Tc_Part().split_csv(dataSet.File_Upset, train_set=dataSet.Train_Set, file_name=dataSet.File_Upset)  # 数据切分
     dataProcess.PyCSV().split_csv(csv_path=csv_path, save_dir=save_dir, num_user=dataSet.num_user)  # 模拟分配给各用户机器
     df = pd.read_csv(dataSet.File_Check)  # 转换测试集dataframe
     print(len(df))
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     testGraph = dataToGraph.Graph.turn_Graph(df)  # 测试集图生成
     # GCN训练部分
     for i in range(dataSet.num_user):
-        dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
+        dfTrain = pd.read_csv('Part_Data/resampled_data_' + str(i + 1) + '.csv')  # 生成各用户图
         trainGraph = dataToGraph.Graph.turn_Graph(dfTrain)
         user_graph_list.append(trainGraph)
     print("Now is GCN training")
@@ -86,19 +86,20 @@ if __name__ == '__main__':
     # 第二数据集训练
     print("now is the second dataset train")
     user_graph_second_list = []
-    dataProcess.Tc_Part().split_csv(dataSet.File_Upset_o, train_set=dataSet.Train_Set_s, file_name=dataSet.File_Upset_o)  # 数据切分
-    dataProcess.PyCSV().split_csv(csv_path=csv_path, save_dir=save_dir, num_user=dataSet.num_user_s)  # 模拟分配给各用户机器
+    dataProcess.get_label_data("Data/creditcard_2023.csv")  # 数据打乱
+    dataProcess.Tc_Part().split_csv(dataSet.File_Upset, train_set=dataSet.Train_Set_s, file_name=dataSet.File_Upset)  # 数据切分
+    dataProcess.PyCSV().split_csv(csv_path="Data/creditcard_2023.csv", save_dir=save_dir, num_user=dataSet.num_user)  # 模拟分配给各用户机器
     df = pd.read_csv(dataSet.File_Check)  # 转换测试集dataframe
     print(len(df))
     # GCN测试集部分
-    testGraphSecond = dataToGraph.Graph.turn_Graph(df, if_s=True)  # 测试集图生成
+    testGraphSecond = dataToGraph.Graph.turn_Graph(df)  # 测试集图生成
     # GCN训练部分
     for i in range(dataSet.num_user_s):
-        dfTrain = pd.read_csv('Part_Data/Data_Train_' + str(i + 1) + '.csv')  # 生成各用户图
-        trainGraph = dataToGraph.Graph.turn_Graph(dfTrain, if_s=True)
+        dfTrain = pd.read_csv('Part_Data/creditcard_2023_' + str(i + 1) + '.csv')  # 生成各用户图
+        trainGraph = dataToGraph.Graph.turn_Graph(dfTrain)
         user_graph_second_list.append(trainGraph)
     print("Now is GCN training")
-    # 数据集比第一个大，加入num参数进行更细的分块训练
+    # 加入num参数以确认正在训练第二个数据集
     gcn.fed_train(user_graph_second_list, testGraphSecond, num=2)
     print("Now is SAGE training")
     graphSAGE.fed_train(user_graph_second_list, testGraphSecond, num=2)

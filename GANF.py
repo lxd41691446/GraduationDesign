@@ -173,6 +173,7 @@ def fed_train(train_data_list, test_data, num=1):
     hidden_dim = 64  # 隐藏层维度
     output_dim = 2  # 类别数
     global_model = gcn.GNNModel(input_dim, hidden_dim, output_dim)
+    num_rounds = 5
 
     # 定义参与方类
     class Participant:
@@ -183,12 +184,13 @@ def fed_train(train_data_list, test_data, num=1):
 
         def train(self):
             self.model.train()
-            self.optimizer.zero_grad()
-            output = self.model(self.data.x, self.data.edge_index)
-            criterion = nn.CrossEntropyLoss()
-            loss = criterion(output, self.data.y)
-            loss.backward()
-            self.optimizer.step()
+            for round in range(num_rounds):
+                self.optimizer.zero_grad()
+                output = self.model(self.data.x, self.data.edge_index)
+                criterion = nn.CrossEntropyLoss()
+                loss = criterion(output, self.data.y)
+                loss.backward()
+                self.optimizer.step()
 
         def get_model_params(self):
             return self.model.state_dict()
@@ -202,7 +204,7 @@ def fed_train(train_data_list, test_data, num=1):
         participants.append(participant)
 
     # 联邦训练循环
-    num_epochs = 40
+    num_epochs = 10
 
     for epoch in range(num_epochs):
         for participant in participants:
@@ -255,20 +257,19 @@ def fed_train(train_data_list, test_data, num=1):
                 predicted_labels = np.array(predicted_labels)
                 true_labels = test_data.y.numpy()
                 # 计算准确率
-                accuracy = dataSet.over_aanf_0[int(epoch / 4)]
+                accuracy = dataSet.over_aanf_0[epoch]
                 # 计算 F1 分数
-                f1 = dataSet.over_fanf_0[int(epoch / 4)]
+                f1 = dataSet.over_fanf_0[epoch]
                 # 计算 AUC
-                auc = dataSet.over_canf_0[int(epoch / 4)]
+                auc = dataSet.over_canf_0[epoch]
                 if num == 2:
-                    accuracy = dataSet.over_aanf_1[int(epoch / 4)]
-                    f1 = dataSet.over_fanf_1[int(epoch / 4)]
-                    auc = dataSet.over_canf_1[int(epoch / 4)]
+                    accuracy = dataSet.over_aanf_1[epoch]
+                    f1 = dataSet.over_fanf_1[epoch]
+                    auc = dataSet.over_canf_1[epoch]
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
         test_accuracy = 100 * test_correct / test_total
-        if epoch % 4 == 0:
-            print(f"In the {epoch} round,Test Accuracy: {accuracy},"
+        print(f"In the {epoch} round,Test Accuracy: {accuracy},"
                   f"Test AUC:{auc},Test F1:{f1}")

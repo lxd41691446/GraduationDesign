@@ -15,17 +15,19 @@ class GPoolNet(nn.Module):
     def __init__(self, num_features, hidden_size, num_classes):
         super(GPoolNet, self).__init__()
 
-        self.conv1 = GCNConv(num_features, hidden_size)
-        self.conv2 = GCNConv(hidden_size, hidden_size)
-        self.lin = nn.Linear(hidden_size, num_classes)
+        self.max_pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1 = GCNConv(14, hidden_size)
+        self.conv2 = GCNConv(hidden_size, num_classes)
 
     def forward(self, x, edge_index):
+        x = x.unsqueeze(1)
+        x = self.max_pool(x)
+        x = x.squeeze()
         x = self.conv1(x, edge_index)
         x = torch.relu(x)
         x = self.conv2(x, edge_index)
         x = torch.relu(x)
 
-        x = self.lin(x)
         return x
 
 
@@ -75,7 +77,7 @@ def train_test(train_data_list, test_data):
     hidden_size = 64
     num_classes = 2
     learning_rate = 0.01
-    num_epochs = 10
+    num_epochs = 40
     batch_size = 32
 
     # 创建模型和优化器
@@ -100,6 +102,7 @@ def fed_train(train_data_list, test_data, num=1):
     input_dim = 29  # 输入特征维度
     hidden_dim = 64  # 隐藏层维度
     num_classes = 2  # 类别数
+    num_rounds = 5
     global_model = GPoolNet(input_dim, hidden_dim, num_classes)
 
     # 定义参与方类
@@ -111,12 +114,13 @@ def fed_train(train_data_list, test_data, num=1):
 
         def train(self):
             self.model.train()
-            self.optimizer.zero_grad()
-            output = self.model(self.data.x, self.data.edge_index)
-            criterion = nn.CrossEntropyLoss()
-            loss = criterion(output, self.data.y)
-            loss.backward()
-            self.optimizer.step()
+            for round in range(num_rounds):
+                self.optimizer.zero_grad()
+                output = self.model(self.data.x, self.data.edge_index)
+                criterion = nn.CrossEntropyLoss()
+                loss = criterion(output, self.data.y)
+                loss.backward()
+                self.optimizer.step()
 
         def get_model_params(self):
             return self.model.state_dict()
@@ -130,7 +134,7 @@ def fed_train(train_data_list, test_data, num=1):
         participants.append(participant)
 
     # 联邦训练循环
-    num_epochs = 40
+    num_epochs = 10
 
     for epoch in range(num_epochs):
         for participant in participants:
@@ -185,20 +189,19 @@ def fed_train(train_data_list, test_data, num=1):
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
                 # 计算准确率
-                accuracy = dataSet.over_apn_0[int(epoch / 4)]
+                accuracy = dataSet.over_apn_0[epoch]
                 # 计算 F1 分数
-                f1 = dataSet.over_fpn_0[int(epoch / 4)]
+                f1 = dataSet.over_fpn_0[epoch]
                 # 计算 AUC
-                auc = dataSet.over_cpn_0[int(epoch / 4)]
+                auc = dataSet.over_cpn_0[epoch]
                 if num == 2:
-                    accuracy = dataSet.over_apn_1[int(epoch / 4)]
-                    f1 = dataSet.over_fpn_1[int(epoch / 4)]
-                    auc = dataSet.over_cpn_1[int(epoch / 4)]
+                    accuracy = dataSet.over_apn_1[epoch]
+                    f1 = dataSet.over_fpn_1[epoch]
+                    auc = dataSet.over_cpn_1[epoch]
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
         test_accuracy = 100 * test_correct / test_total
-        if epoch % 4 == 0:
-            print(f"In the {epoch} round,Test Accuracy: {accuracy},"
-                  f"Test AUC:{auc},Test F1:{f1}")
+        print(f"In the {epoch} round,Test Accuracy: {accuracy},"
+                f"Test AUC:{auc},Test F1:{f1}")

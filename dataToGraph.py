@@ -10,6 +10,24 @@ import networkx as nx
 
 class Graph:
     def kmeans(X, n_clusters, max_iter=100):
+        n_samples, n_features = X.shape
+
+        # 随机初始化 k 个簇中心
+        centroids = X[torch.randperm(n_samples)[:n_clusters]]
+
+        for _ in range(max_iter):
+            # 为每个样本分配最近的簇标签
+            distances = torch.cdist(X, centroids)
+            labels = torch.argmin(distances, dim=1)
+
+            # 更新每个簇的质心
+            new_centroids = torch.stack([X[labels == i].mean(dim=0) for i in range(n_clusters)])
+
+            # 判断是否达到收敛条件
+            if torch.allclose(centroids, new_centroids):
+                break
+            centroids = new_centroids
+        '''
         # 随机选择初始聚类中心
         random_indices = torch.randperm(X.shape[0])[:n_clusters]
         centroids = X[random_indices]
@@ -29,14 +47,40 @@ class Graph:
                 break
 
             centroids = new_centroids
-
+            '''
         return labels
 
-    def turn_Graph(df, if_s=False):
-        if if_s:
-            x = torch.tensor(df.iloc[:, 1:-1].values, dtype=torch.float)
-        else:
-            x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
+    def create_edge_index_from_clusters(labels):
+        """
+        根据聚类标签,创建 PyTorch Geometric 格式的 edge_index 张量。
+
+        参数:
+        labels (torch.Tensor): 每个样本所属的簇标签,shape为(n_samples,)。
+
+        返回:
+        edge_index (torch.LongTensor): 表示边的起始节点和终止节点的索引张量,shape为(2, n_edges)。
+        """
+        n_samples = labels.shape[0]
+
+        # 创建一个空的 edge_index 张量
+        edge_index = torch.zeros(2, 0, dtype=torch.long)
+
+        # 遍历所有样本,创建同一簇内的边
+        for cluster_id in torch.unique(labels):
+            # 找到属于当前簇的样本索引
+            cluster_indices = torch.nonzero(labels == cluster_id).squeeze()
+
+            # 创建同一簇内所有样本之间的边
+            for i in range(len(cluster_indices)):
+                for j in range(i + 1, len(cluster_indices)):
+                    # 添加边的起始节点和终止节点索引
+                    edge_index = torch.cat([edge_index, torch.tensor([[cluster_indices[i]], [cluster_indices[j]]])],
+                                           dim=1)
+
+        return edge_index
+
+    def turn_Graph(df):
+        x = torch.tensor(df.iloc[:, :-1].values, dtype=torch.float)
         y = torch.tensor(df.iloc[:, -1].values, dtype=torch.long)
         k = int(len(df) / 1000)
         print("prepare make KMeans")
@@ -47,21 +91,27 @@ class Graph:
         cluster_labels = kmeans.labels_
         '''
         cluster_labels = Graph.kmeans(x, k)
+
         edge_index = []
         print("prepare make edge")
         for i in range(k):
             cluster_indices = np.where(cluster_labels == i)[0]
-            re_node = cluster_indices[0]
-            for j in range(1, len(cluster_indices)):
-                edge_index.append([re_node, cluster_indices[j]])
+            # print(cluster_indices)
+            if len(cluster_indices) != 0:
+                re_node = cluster_indices[0]
+                for j in range(1, len(cluster_indices)):
+                    edge_index.append([re_node, cluster_indices[j]])
         edge_index = torch.tensor(np.array(edge_index).T)
+
+        # edge_index = Graph.create_edge_index_from_clusters(cluster_labels)
         data = Data(x=x, y=y, edge_index=edge_index)
         print(data)
         print("done!")
 
+        '''
         # 创建一个无向图对象
         graph = nx.Graph()
-
+        
         # 添加节点
         for i in range(len(x)):
             graph.add_node(i, pos=(x[i], y[i]))
@@ -73,7 +123,7 @@ class Graph:
             graph.add_edge(src, tgt)
 
         print("graph created")
-        '''
+        
         # 绘制图像
         pos = nx.spring_layout(graph)  # 选择一种布局算法
         plt.figure(figsize=(10, 8))

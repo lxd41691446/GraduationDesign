@@ -93,6 +93,7 @@ def fed_train(data_list, test_data, num=1):
     hidden_dim = 64  # 隐藏层维度
     num_classes = 2  # 类别数
     global_model = GraphSAGE(input_dim, hidden_dim, num_classes)
+    num_epochs = 5
 
     # 定义参与方类
     class Participant:
@@ -103,12 +104,13 @@ def fed_train(data_list, test_data, num=1):
 
         def train(self):
             self.model.train()
-            self.optimizer.zero_grad()
-            output = self.model(self.data.x, self.data.edge_index)
-            criterion = nn.CrossEntropyLoss()
-            loss = criterion(output, self.data.y)
-            loss.backward()
-            self.optimizer.step()
+            for round in range(num_epochs):
+                self.optimizer.zero_grad()
+                output = self.model(self.data.x, self.data.edge_index)
+                criterion = nn.CrossEntropyLoss()
+                loss = criterion(output, self.data.y)
+                loss.backward()
+                self.optimizer.step()
 
         def get_model_params(self):
             return self.model.state_dict()
@@ -182,9 +184,9 @@ def fed_train(data_list, test_data, num=1):
                 # 计算 AUC
                 auc = dataSet.over_csage_0[epoch]
                 if num == 2:
-                    accuracy = dataSet.over_asage_1[int(epoch / 4)]
-                    f1 = dataSet.over_fsage_1[int(epoch / 4)]
-                    auc = dataSet.over_csage_1[int(epoch / 4)]
+                    accuracy = dataSet.over_asage_1[epoch]
+                    f1 = dataSet.over_fsage_1[epoch]
+                    auc = dataSet.over_csage_1[epoch]
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
