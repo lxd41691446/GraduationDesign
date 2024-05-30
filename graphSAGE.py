@@ -178,23 +178,17 @@ def fed_train(data_list, test_data, num=1):
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
                 # 计算指标
-                accuracy = dataSet.over_asage_0[epoch]
-                f1 = dataSet.over_fsage_0[epoch]
-                auc = dataSet.over_csage_0[epoch]
-                # accuracy = accuracy_score(true_labels, predicted_labels)
-                # f1 = f1_score(true_labels, predicted_labels)
-                # auc = roc_auc_score(true_labels, predicted_labels)
+                accuracy = accuracy_score(true_labels, predicted_labels)
+                f1 = f1_score(true_labels, predicted_labels)
+                auc = roc_auc_score(true_labels, predicted_labels)
                 if num == 2:
-                    accuracy = dataSet.over_asage_1[epoch]
-                    f1 = dataSet.over_fsage_1[epoch]
-                    auc = dataSet.over_csage_1[epoch]
-                    # accuracy = accuracy_score(true_labels, predicted_labels)
-                    # f1 = f1_score(true_labels, predicted_labels)
-                    # auc = roc_auc_score(true_labels, predicted_labels)
+                    accuracy = accuracy_score(true_labels, predicted_labels)
+                    f1 = f1_score(true_labels, predicted_labels)
+                    auc = roc_auc_score(true_labels, predicted_labels)
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
 
             test_accuracy = 100 * test_correct / test_total
-            print(f"In the {epoch} round,Test Accuracy: {accuracy},"
-                  f"Test AUC:{auc},Test F1:{f1}")
+            print(f"In the {epoch} round,Test Accuracy: {accuracy:.4f},"
+                  f"Test AUC:{auc:.4f},Test F1:{f1:.4f}")
