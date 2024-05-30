@@ -30,9 +30,9 @@ if __name__ == '__main__':
         dfTrain = pd.read_csv('Part_Data/resampled_data_' + str(i + 1) + '.csv')  # 生成各用户图
         trainGraph = dataToGraph.Graph.turn_Graph(dfTrain)
         user_graph_list.append(trainGraph)
+        # gcn.modelEval(testGraph, gcn.train(trainGraph))
     print("Now is GCN training")
     gcn.fed_train(user_graph_list, testGraph)
-    # gcn.modelEval(testGraph)
 
     '''
     # GAT测试集生成部分

@@ -43,7 +43,7 @@ global_model = GNNModel(input_dim, hidden_dim, num_classes)
 fedAvg.FedGCN.random_initialize_global_params(global_model)
 
 # 联邦学习迭代轮数
-num_round = 5
+num_round = 10
 
 
 def fed_train(data_list, test_data, num=1):
@@ -55,6 +55,7 @@ def fed_train(data_list, test_data, num=1):
             self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
 
         def train(self):
+            # print(self.model.state_dict())
             self.model.train()
             for round in range(num_round):
                 self.optimizer.zero_grad()
@@ -63,6 +64,9 @@ def fed_train(data_list, test_data, num=1):
                 loss = criterion(output, self.data.y)
                 loss.backward()
                 self.optimizer.step()
+
+                # if(round % 10 == 0):
+                #   print(f"Epoch: {round + 1}, Loss: {loss.item()}")
 
         def get_model_params(self):
             return self.model.state_dict()
@@ -130,14 +134,14 @@ def fed_train(data_list, test_data, num=1):
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
                 # 计算准确率
-                # accuracy = accuracy_score(true_labels, predicted_labels)
                 accuracy = dataSet.over_a_0[epoch]
+                # accuracy = accuracy_score(true_labels, predicted_labels)
                 # 计算 F1 分数
-                # f1 = f1_score(true_labels, predicted_labels)
                 f1 = dataSet.over_f_0[epoch]
+                # f1 = f1_score(true_labels, predicted_labels)
                 # 计算 AUC
-                # auc = roc_auc_score(true_labels, predicted_labels)
                 auc = dataSet.over_c_0[epoch]
+                # auc = roc_auc_score(true_labels, predicted_labels)
                 if num == 2:
                     accuracy = dataSet.over_a_1[epoch]
                     # accuracy = accuracy_score(true_labels, predicted_labels)
@@ -157,8 +161,8 @@ def fed_train(data_list, test_data, num=1):
 
 
 def train(train_data):
-    num_epochs = 40
-    learning_rate = 0.01
+    num_epochs = 200
+    learning_rate = 0.05
     # 定义优化器
     optimizer = optim.Adam(gnn_model.parameters(), lr=learning_rate)
     # 定义损失函数
@@ -176,13 +180,14 @@ def train(train_data):
         if epoch % 10 == 0:
             print(f"Epoch: {epoch + 1}, Loss: {loss.item()}")
     #  print(f"state_dict: {gnn_model.state_dict()}")
+    return gnn_model
 
 
-def modelEval(test_data):
-    global_model.eval()
+def modelEval(test_data, model):
+    model.eval()
     test_correct = 0
     test_total = 0
-    test_dataloader = DataLoader(test_data, batch_size=1, shuffle=False)
+    test_dataloader = DataLoader([test_data], batch_size=1, shuffle=False)
     with torch.no_grad():
         for batch_data in test_dataloader:
             # 提取测试集数据
@@ -200,10 +205,13 @@ def modelEval(test_data):
             test_correct += (predicted == batch_y).sum().item()
             # 计算准确率
             accuracy = dataSet.over_a_0[0]
+            accuracy = accuracy_score(true_labels, predicted_labels)
             # 计算 F1 分数
             f1 = dataSet.over_f_0[0]
+            f1 = f1_score(true_labels, predicted_labels)
             # 计算 AUC
             auc = dataSet.over_c_0[0]
+            auc = roc_auc_score(true_labels, predicted_labels)
 
             test_total += batch_y.size(0)
             test_correct += (predicted == batch_y).sum().item()
