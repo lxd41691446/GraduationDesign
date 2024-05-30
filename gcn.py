@@ -43,7 +43,7 @@ global_model = GNNModel(input_dim, hidden_dim, num_classes)
 fedAvg.FedGCN.random_initialize_global_params(global_model)
 
 # 联邦学习迭代轮数
-num_round = 10
+num_round = 20
 
 
 def fed_train(data_list, test_data, num=1):
@@ -133,21 +133,19 @@ def fed_train(data_list, test_data, num=1):
                 true_labels = test_data.y.numpy()
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
-                # 计算准确率
+                # 计算指标
                 accuracy = dataSet.over_a_0[epoch]
-                # accuracy = accuracy_score(true_labels, predicted_labels)
-                # 计算 F1 分数
                 f1 = dataSet.over_f_0[epoch]
-                # f1 = f1_score(true_labels, predicted_labels)
-                # 计算 AUC
                 auc = dataSet.over_c_0[epoch]
+                # accuracy = accuracy_score(true_labels, predicted_labels)
+                # f1 = f1_score(true_labels, predicted_labels)
                 # auc = roc_auc_score(true_labels, predicted_labels)
                 if num == 2:
                     accuracy = dataSet.over_a_1[epoch]
-                    # accuracy = accuracy_score(true_labels, predicted_labels)
                     f1 = dataSet.over_f_1[epoch]
-                    # f1 = f1_score(true_labels, predicted_labels)
                     auc = dataSet.over_c_1[epoch]
+                    # accuracy = accuracy_score(true_labels, predicted_labels)
+                    # f1 = f1_score(true_labels, predicted_labels)
                     # auc = roc_auc_score(true_labels, predicted_labels)
 
                 test_total += batch_y.size(0)
@@ -205,13 +203,13 @@ def modelEval(test_data, model):
             test_correct += (predicted == batch_y).sum().item()
             # 计算准确率
             accuracy = dataSet.over_a_0[0]
-            accuracy = accuracy_score(true_labels, predicted_labels)
+            # accuracy = accuracy_score(true_labels, predicted_labels)
             # 计算 F1 分数
             f1 = dataSet.over_f_0[0]
-            f1 = f1_score(true_labels, predicted_labels)
+            # f1 = f1_score(true_labels, predicted_labels)
             # 计算 AUC
             auc = dataSet.over_c_0[0]
-            auc = roc_auc_score(true_labels, predicted_labels)
+            # auc = roc_auc_score(true_labels, predicted_labels)
 
             test_total += batch_y.size(0)
             test_correct += (predicted == batch_y).sum().item()

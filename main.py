@@ -1,4 +1,3 @@
-import GANF
 import dataSet
 import dataProcess
 import pandas as pd
@@ -9,6 +8,7 @@ import gat
 import gcn
 import gpn
 import graphSAGE
+import GANF
 
 if __name__ == '__main__':
     csv_path = "dataProcess/resampled_data.csv"

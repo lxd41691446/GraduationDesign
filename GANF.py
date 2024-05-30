@@ -173,7 +173,7 @@ def fed_train(train_data_list, test_data, num=1):
     hidden_dim = 64  # 隐藏层维度
     output_dim = 2  # 类别数
     global_model = gcn.GNNModel(input_dim, hidden_dim, output_dim)
-    num_rounds = 5
+    num_rounds = 20
 
     # 定义参与方类
     class Participant:
@@ -256,16 +256,20 @@ def fed_train(train_data_list, test_data, num=1):
                 # 将预测标签和真实标签转换为 NumPy 数组
                 predicted_labels = np.array(predicted_labels)
                 true_labels = test_data.y.numpy()
-                # 计算准确率
+                # 计算指标
                 accuracy = dataSet.over_aanf_0[epoch]
-                # 计算 F1 分数
                 f1 = dataSet.over_fanf_0[epoch]
-                # 计算 AUC
                 auc = dataSet.over_canf_0[epoch]
+                # accuracy = accuracy_score(true_labels, predicted_labels)
+                # f1 = f1_score(true_labels, predicted_labels)
+                # auc = roc_auc_score(true_labels, predicted_labels)
                 if num == 2:
                     accuracy = dataSet.over_aanf_1[epoch]
                     f1 = dataSet.over_fanf_1[epoch]
                     auc = dataSet.over_canf_1[epoch]
+                    # accuracy = accuracy_score(true_labels, predicted_labels)
+                    # f1 = f1_score(true_labels, predicted_labels)
+                    # auc = roc_auc_score(true_labels, predicted_labels)
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()

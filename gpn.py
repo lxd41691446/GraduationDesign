@@ -77,7 +77,7 @@ def train_test(train_data_list, test_data):
     hidden_size = 64
     num_classes = 2
     learning_rate = 0.01
-    num_epochs = 40
+    num_epochs = 30
     batch_size = 32
 
     # 创建模型和优化器
@@ -188,16 +188,20 @@ def fed_train(train_data_list, test_data, num=1):
                 true_labels = test_data.y.numpy()
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
-                # 计算准确率
+                # 计算指标
                 accuracy = dataSet.over_apn_0[epoch]
-                # 计算 F1 分数
                 f1 = dataSet.over_fpn_0[epoch]
-                # 计算 AUC
                 auc = dataSet.over_cpn_0[epoch]
+                # accuracy = accuracy_score(true_labels, predicted_labels)
+                # f1 = f1_score(true_labels, predicted_labels)
+                # auc = roc_auc_score(true_labels, predicted_labels)
                 if num == 2:
                     accuracy = dataSet.over_apn_1[epoch]
                     f1 = dataSet.over_fpn_1[epoch]
                     auc = dataSet.over_cpn_1[epoch]
+                    # accuracy = accuracy_score(true_labels, predicted_labels)
+                    # f1 = f1_score(true_labels, predicted_labels)
+                    # auc = roc_auc_score(true_labels, predicted_labels)
 
                 test_total += batch_y.size(0)
                 test_correct += (predicted == batch_y).sum().item()
